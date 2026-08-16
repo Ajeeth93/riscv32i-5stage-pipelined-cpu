@@ -10,14 +10,21 @@ It serves as both a learning platform and a demonstration of practical digital d
 Repository Structure:
 
 RTL Code/ – Contains the SystemVerilog source files for the processor.
+
 RTL Modules and Schematics/ – Contains schematics for individual components and the complete pipelined processor.
+
 Testing and Simulation/ – Contains simulation files, waveforms and tests for important processor components and the complete CPU.
+
 README.md – Repository overview (this file)
 
 Goals:
 
 Build a modular and easy-to-understand RISC-V processor.
+
 Focus on correct and reliable RTL design.
+
 Use simulation and waveform analysis to test and debug the processor.
+
 Gain hands-on experience with pipelining, hazards, forwarding and branch prediction.
+
 Continuously improve the processor's design and performance.
