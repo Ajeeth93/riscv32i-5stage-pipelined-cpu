@@ -3,15 +3,21 @@ module RISC_V_Pipeline_InstructionMemory (
     output logic [31:0] RD
 );
 
-    // 64-word x 32-bit memory array
-    logic [31:0] RAM [0:63];
+    logic [31:0] RAM [0:255];
 
-    // Load initial memory content at startup
+    integer i;
+
     initial begin
+
+        // Initialize entire instruction memory to RISC-V NOP
+        for (i = 0; i < 256; i = i + 1)
+            RAM[i] = 32'h00000013;
+
+        // Load program
         $readmemh("RISC-Vmem.txt", RAM);
+
     end
 
-    // Continuous assignment using word-aligned indexing (A[7:2])
-    assign RD = RAM[A[7:2]];
+    assign RD = RAM[A[31:2]];
 
 endmodule
