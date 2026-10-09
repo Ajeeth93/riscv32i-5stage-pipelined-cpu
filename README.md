@@ -10,15 +10,25 @@ It serves as both a learning platform and a demonstration of practical digital d
 
 ## Repository Structure
 
-- **`RTL Code/`** – Contains the SystemVerilog source files for the processor.
-- **`RTL Modules and Schematics/`** – Contains schematics for individual components and the complete pipelined processor.
-- **`Testing and Simulation/`** – Contains simulation files, waveforms, and tests for important processor components and the complete CPU.
+- **`RTL Code/`** – SystemVerilog source files for the processor.
+- **`RTL Modules and Schematics/`** – Schematics for individual components and the complete pipelined processor.
+- **`Test Bench/`** – Directed SystemVerilog testbenches for the hazard unit and the full processor.
+- **`UVM Verification/`** – UVM testbench for the hazard unit (constrained-random stimulus, scoreboard, functional coverage).
+- **`Simulation & Testing/`** – Simulation waveforms for key components and the complete CPU.
 - **`README.md`** – Repository overview.
+
+## Verification
+
+The design is verified at two levels:
+
+- **Directed testbenches** (`Test Bench/`) for the hazard unit and the full pipelined processor, checked through waveform analysis (`Simulation & Testing/`).
+- **UVM testbench for the hazard unit** (`UVM Verification/`): a full UVM environment (sequencer, driver, monitor, agent, scoreboard, coverage collector) that runs 17 directed scenarios and 1000+ constrained-random transactions. A self-checking scoreboard compares every output against an independent reference model, and a covergroup measures forwarding paths, MEM-over-WB priority, x0 handling, load-use stalls and branch flushes. Result: **PASSED with 0 mismatches over 1,170 transactions and 99.21 % functional coverage**. See the [UVM Verification README](UVM%20Verification/README.md) for the architecture, test plan and how to run it.
 
 ## Goals
 
 - Build a **modular and easy-to-understand RISC-V processor**.
 - Focus on **correct and reliable RTL design**.
 - Use **simulation and waveform analysis** to test and debug the processor.
+- Verify critical blocks with **UVM** (constrained-random stimulus, scoreboarding and functional coverage).
 - Gain hands-on experience with **pipelining, hazards, forwarding, and branch prediction**.
 - Continuously improve the processor's **design and performance**.
