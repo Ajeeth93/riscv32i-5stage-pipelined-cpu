@@ -1,0 +1,17 @@
+# Vivado generated files
+*.jou
+*.log
+!UVM Verification/hazard_sim.log
+*.str
+*.pb
+*.wdb
+*.backup.*
+.Xil/
+xsim.dir/
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.gen/
+*.xpr

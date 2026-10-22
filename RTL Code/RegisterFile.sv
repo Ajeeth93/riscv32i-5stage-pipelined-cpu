@@ -23,8 +23,9 @@ module RISC_V_Pipeline_RegisterFile (
     assign RD1 = (A1 == 5'b0) ? 32'b0 : RegFile[A1];
     assign RD2 = (A2 == 5'b0) ? 32'b0 : RegFile[A2];
 
-    // Synchronous write on rising clock edge (protects x0 from being overwritten)
-    always_ff @(posedge clk) begin
+    // Write on the FALLING clock edge so an instruction in Decode reads the value
+    // being written back in the same cycle (x0 is never overwritten)
+    always_ff @(negedge clk) begin
         if (WE3 && (A3 != 5'b0)) begin
             RegFile[A3] <= WD3;
         end
