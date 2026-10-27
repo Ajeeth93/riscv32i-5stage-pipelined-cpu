@@ -8,7 +8,7 @@
 //   Instruction : fields of the instruction in the Decode stage
 //   Core        : hazard unit, branch, ALU result, write-back, store bus
 //   Registers   : architectural registers by ABI name
-// Internal signals are read through hierarchical references (dut.xxx).
+// Internal signals are read through hierarchical references (dut.u_core.xxx).
 // Run "source wave.tcl" in the Tcl console for the grouped view.
 //
 // Program: RISC-Vmem.txt (see riscvtest.s). PASS = store of 25 to address 100.
@@ -28,7 +28,7 @@ module testbench;
     logic [31:0] WriteData;   // store data
     logic        MemWrite;    // store enable
 
-    RISC_V_Pipeline_Top dut (
+    riscv_soc dut (
         .clk       (clk),
         .rst       (rst),
         .PC        (PC),
@@ -46,14 +46,14 @@ module testbench;
     logic [6:0]  funct7;
     logic [31:0] imm;
 
-    assign instruction = dut.InstrD;
-    assign opcode      = dut.InstrD[6:0];
-    assign rd          = dut.InstrD[11:7];
-    assign funct3      = dut.InstrD[14:12];
-    assign rs1         = dut.InstrD[19:15];
-    assign rs2         = dut.InstrD[24:20];
-    assign funct7      = dut.InstrD[31:25];
-    assign imm         = dut.ImmExtD;
+    assign instruction = dut.u_core.InstrD;
+    assign opcode      = dut.u_core.InstrD[6:0];
+    assign rd          = dut.u_core.InstrD[11:7];
+    assign funct3      = dut.u_core.InstrD[14:12];
+    assign rs1         = dut.u_core.InstrD[19:15];
+    assign rs2         = dut.u_core.InstrD[24:20];
+    assign funct7      = dut.u_core.InstrD[31:25];
+    assign imm         = dut.u_core.ImmExtD;
 
     logic [8*8-1:0] instruction_ascii;   // radix ASCII in the waveform
 
@@ -98,31 +98,31 @@ module testbench;
     logic [4:0]  RdW;
     logic [31:0] ResultW;
 
-    assign StallF     = dut.StallF;
-    assign StallD     = dut.StallD;
-    assign FlushD     = dut.FlushD;
-    assign FlushE     = dut.FlushE;
-    assign lwstall    = dut.lwstall;
-    assign ForwardAE  = dut.ForwardAE;
-    assign ForwardBE  = dut.ForwardBE;
-    assign PCSrcE     = dut.PCSrcE;
-    assign ALUResultE = dut.ALUResultE;
-    assign RegWriteW  = dut.RegWriteW;
-    assign RdW        = dut.RdW;
-    assign ResultW    = dut.ResultW;
+    assign StallF     = dut.u_core.StallF;
+    assign StallD     = dut.u_core.StallD;
+    assign FlushD     = dut.u_core.FlushD;
+    assign FlushE     = dut.u_core.FlushE;
+    assign lwstall    = dut.u_core.lwstall;
+    assign ForwardAE  = dut.u_core.ForwardAE;
+    assign ForwardBE  = dut.u_core.ForwardBE;
+    assign PCSrcE     = dut.u_core.PCSrcE;
+    assign ALUResultE = dut.u_core.ALUResultE;
+    assign RegWriteW  = dut.u_core.RegWriteW;
+    assign RdW        = dut.u_core.RdW;
+    assign ResultW    = dut.u_core.ResultW;
 
     // ----------------------------------------------------------- Registers
     logic [31:0] ra, sp, gp, tp, t0, t1, t2, s0, s1;
 
-    assign ra = dut.u_rf.RegFile[1];
-    assign sp = dut.u_rf.RegFile[2];
-    assign gp = dut.u_rf.RegFile[3];
-    assign tp = dut.u_rf.RegFile[4];
-    assign t0 = dut.u_rf.RegFile[5];
-    assign t1 = dut.u_rf.RegFile[6];
-    assign t2 = dut.u_rf.RegFile[7];
-    assign s0 = dut.u_rf.RegFile[8];
-    assign s1 = dut.u_rf.RegFile[9];
+    assign ra = dut.u_core.u_rf.RegFile[1];
+    assign sp = dut.u_core.u_rf.RegFile[2];
+    assign gp = dut.u_core.u_rf.RegFile[3];
+    assign tp = dut.u_core.u_rf.RegFile[4];
+    assign t0 = dut.u_core.u_rf.RegFile[5];
+    assign t1 = dut.u_core.u_rf.RegFile[6];
+    assign t2 = dut.u_core.u_rf.RegFile[7];
+    assign s0 = dut.u_core.u_rf.RegFile[8];
+    assign s1 = dut.u_core.u_rf.RegFile[9];
 
     // ------------------------------------------------------ Clock / reset
     initial begin
@@ -139,7 +139,7 @@ module testbench;
     // Fail immediately if the program was not loaded (memory left as nops)
     initial begin
         #1;
-        if (dut.InstrF === 32'h0000_0013)
+        if (dut.u_core.InstrF === 32'h0000_0013)
             $fatal(1, "RISC-Vmem.txt not loaded - add it as a simulation source and relaunch");
     end
 
@@ -155,10 +155,10 @@ module testbench;
     always @(posedge clk) begin
         if (!rst) begin
             cycles++;
-            if (!dut.FlushE && dut.InstrD !== 32'h0000_0013 && !$isunknown(dut.InstrD))
+            if (!dut.u_core.FlushE && dut.u_core.InstrD !== 32'h0000_0013 && !$isunknown(dut.u_core.InstrD))
                 instret++;
-            if (dut.lwstall) lw_stalls++;
-            if (dut.PCSrcE)  taken_ctrl++;
+            if (dut.u_core.lwstall) lw_stalls++;
+            if (dut.u_core.PCSrcE)  taken_ctrl++;
             if (cycles >= MAX_CYCLES) begin
                 $display("");
                 $display("==============================================");
