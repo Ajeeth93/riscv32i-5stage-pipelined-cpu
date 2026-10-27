@@ -1,5 +1,7 @@
 // Simulation-only SoC: the ASIC core plus behavioural instruction/data memories.
 // Keeps the old top-level ports so the original testbench works unchanged.
+`timescale 1ns/ 1ps
+
 module riscv_soc (
     input  logic        clk,
     input  logic        rst,
