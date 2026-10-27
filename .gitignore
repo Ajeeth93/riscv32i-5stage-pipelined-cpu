@@ -15,3 +15,4 @@ xsim.dir/
 *.sim/
 *.gen/
 *.xpr
+asic/runs/

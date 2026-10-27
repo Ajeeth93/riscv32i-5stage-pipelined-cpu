@@ -1,0 +1,6 @@
+{
+"DESIGN_NAME": "RISC_V_Pipeline_Top",
+"VERILOG_FILES": "dir::src/*.sv",
+"CLOCK_PORT": "clk",
+"CLOCK_PERIOD": 20
+}
