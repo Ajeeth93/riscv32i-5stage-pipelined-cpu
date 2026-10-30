@@ -1,6 +1,16 @@
 {
-"DESIGN_NAME": "RISC_V_Pipeline_Top",
-"VERILOG_FILES": "dir::src/*.sv",
-"CLOCK_PORT": "clk",
-"CLOCK_PERIOD": 20
+  "DESIGN_NAME": "RISC_V_Pipeline_Top",
+  "VERILOG_FILES": "dir::src/*.sv",
+  "CLOCK_PORT": "clk",
+  "CLOCK_PERIOD": 25,
+  "PNR_SDC_FILE": "dir::constraint.sdc",
+  "SIGNOFF_SDC_FILE": "dir::constraint.sdc",
+  "FP_CORE_UTIL": 40,
+  "PL_TARGET_DENSITY_PCT": 45,
+  "RUN_POST_GRT_DESIGN_REPAIR": true,
+  "RUN_POST_GRT_RESIZER_TIMING": true,
+  "GRT_DESIGN_REPAIR_MAX_SLEW_PCT": 50,
+  "GRT_DESIGN_REPAIR_MAX_CAP_PCT": 50,
+  "DESIGN_REPAIR_MAX_SLEW_PCT": 50,
+  "DESIGN_REPAIR_MAX_CAP_PCT": 50
 }
