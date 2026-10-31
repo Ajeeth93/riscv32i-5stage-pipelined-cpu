@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-properties>
+ <properties><name>prBoundary</name><source>235/4@1</source><frame-color>#909090</frame-color><fill-color>#909090</fill-color><dither-pattern>I1</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>nwell</name><source>64/20@1</source><frame-color>#505050</frame-color><fill-color>#505050</fill-color><dither-pattern>I1</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>diff</name><source>65/20@1</source><frame-color>#a07840</frame-color><fill-color>#a07840</fill-color><dither-pattern>I2</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>tap</name><source>65/44@1</source><frame-color>#a07840</frame-color><fill-color>#a07840</fill-color><dither-pattern>I3</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>poly</name><source>66/20@1</source><frame-color>#d04080</frame-color><fill-color>#d04080</fill-color><dither-pattern>I4</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>licon</name><source>66/44@1</source><frame-color>#ffffff</frame-color><fill-color>#ffffff</fill-color><dither-pattern>I1</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>li1</name><source>67/20@1</source><frame-color>#7a6acd</frame-color><fill-color>#7a6acd</fill-color><dither-pattern>I5</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>mcon</name><source>67/44@1</source><frame-color>#d0d0d0</frame-color><fill-color>#d0d0d0</fill-color><dither-pattern>I1</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>met1</name><source>68/20@1</source><frame-color>#3050ff</frame-color><fill-color>#3050ff</fill-color><dither-pattern>I9</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>via</name><source>68/44@1</source><frame-color>#ffffff</frame-color><fill-color>#ffffff</fill-color><dither-pattern>I1</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>met2</name><source>69/20@1</source><frame-color>#ff2020</frame-color><fill-color>#ff2020</fill-color><dither-pattern>I5</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>via2</name><source>69/44@1</source><frame-color>#ffffff</frame-color><fill-color>#ffffff</fill-color><dither-pattern>I1</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>met3</name><source>70/20@1</source><frame-color>#20d020</frame-color><fill-color>#20d020</fill-color><dither-pattern>I9</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>via3</name><source>70/44@1</source><frame-color>#ffffff</frame-color><fill-color>#ffffff</fill-color><dither-pattern>I1</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>met4</name><source>71/20@1</source><frame-color>#e8e000</frame-color><fill-color>#e8e000</fill-color><dither-pattern>I5</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>via4</name><source>71/44@1</source><frame-color>#ffffff</frame-color><fill-color>#ffffff</fill-color><dither-pattern>I1</dither-pattern><visible>true</visible><width>1</width></properties>
+ <properties><name>met5</name><source>72/20@1</source><frame-color>#c040ff</frame-color><fill-color>#c040ff</fill-color><dither-pattern>I13</dither-pattern><visible>true</visible><width>1</width></properties>
+</layer-properties>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RV32I Layout Viewer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/openseadragon.min.js"></script>
+<style>
+  :root { --bg:#0d0d10; --fg:#e8e8ec; --dim:#9a9aa6; --line:#2a2a33; --acc:#3b6cff; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:var(--bg); color:var(--fg); font-family:system-ui,sans-serif; height:100vh; display:flex; flex-direction:column; }
+  header { padding:12px 16px; display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; border-bottom:1px solid var(--line); }
+  h1 { font-size:1.05rem; font-weight:600; }
+  .sub { color:var(--dim); font-size:.85rem; }
+  .btns { margin-left:auto; display:flex; gap:6px; }
+  button { background:transparent; color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:6px 10px; font:inherit; font-size:.85rem; cursor:pointer; }
+  button.on { border-color:var(--acc); background:rgba(59,108,255,.18); }
+  #osd { flex:1; min-height:0; background:#000; }
+  footer { padding:6px 16px; color:var(--dim); font-size:.8rem; border-top:1px solid var(--line); }
+  footer i { display:inline-block; width:10px; height:10px; border-radius:2px; margin:0 4px 0 10px; vertical-align:-1px; }
+  a { color:#8fb4ff; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>RV32I 5-stage core &middot; SkyWater 130 nm layout</h1>
+    <div class="sub">Scroll or pinch to zoom from the whole die (~455 &micro;m) down to single transistors.</div>
+  </div>
+  <div class="btns">
+    <button id="b-metals" class="on">Metal routing</button>
+    <button id="b-detail">All layers</button>
+  </div>
+</header>
+<div id="osd"></div>
+<footer>
+  <i style="background:#3050ff"></i>met1 <i style="background:#ff2020"></i>met2
+  <i style="background:#20d020"></i>met3 <i style="background:#e8e000"></i>met4
+  <i style="background:#c040ff"></i>met5 &middot; 40 MHz, 0 violations at 9 corners, DRC/LVS clean &middot;
+  <a href="https://github.com/Ajeeth93/riscv32i-5stage-pipelined-cpu/tree/asic-core">source</a>
+</footer>
+<script>
+  OpenSeadragon.setImageFormatsSupported({ webp: true });
+  const viewer = OpenSeadragon({
+    id: 'osd',
+    prefixUrl: 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/4.1.0/images/',
+    tileSources: [ { tileSource: 'metals.dzi' }, { tileSource: 'detail.dzi', opacity: 0 } ],
+    showNavigator: true, navigatorPosition: 'BOTTOM_RIGHT',
+    maxZoomPixelRatio: 4, visibilityRatio: 0.5,
+    gestureSettingsMouse: { clickToZoom: false }
+  });
+  function show(which) {
+    const m = which === 'metals';
+    const a = viewer.world.getItemAt(0), b = viewer.world.getItemAt(1);
+    if (a) a.setOpacity(m ? 1 : 0);
+    if (b) b.setOpacity(m ? 0 : 1);
+    document.getElementById('b-metals').classList.toggle('on', m);
+    document.getElementById('b-detail').classList.toggle('on', !m);
+  }
+  document.getElementById('b-metals').onclick = () => show('metals');
+  document.getElementById('b-detail').onclick = () => show('detail');
+</script>
+</body>
+</html>
