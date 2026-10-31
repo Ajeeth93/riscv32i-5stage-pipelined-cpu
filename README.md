@@ -4,8 +4,10 @@
 ![Vivado](https://img.shields.io/badge/Tools-Vivado%20xsim-orange)
 ![UVM](https://img.shields.io/badge/Verification-UVM%201.2-green)
 ![Status](https://img.shields.io/badge/Processor%20test-PASSING-brightgreen)
+![ASIC](https://img.shields.io/badge/ASIC-sky130%20signed%20off%20%4040%20MHz-blueviolet)
+![Flow](https://img.shields.io/badge/Flow-LibreLane%20(Yosys%20%2B%20OpenROAD)-informational)
 
-A 32-bit, five-stage pipelined RISC-V processor (**Fetch → Decode → Execute → Memory → Writeback**) with full data forwarding, load-use stall detection and branch/jump flushing, written in synthesizable SystemVerilog. Based on the microarchitecture in *Digital Design and Computer Architecture: RISC-V Edition* (Harris & Harris), implemented, debugged and verified independently.
+A 32-bit, five-stage pipelined RISC-V processor (**Fetch → Decode → Execute → Memory → Writeback**) with full data forwarding, load-use stall detection and branch/jump flushing, written in synthesizable SystemVerilog. Based on the microarchitecture in *Digital Design and Computer Architecture: RISC-V Edition* (Harris & Harris), implemented, debugged and verified independently, then taken from RTL to a **signed-off SkyWater 130 nm layout** with an open-source ASIC flow.
 
 ## Highlights
 
@@ -17,6 +19,52 @@ A 32-bit, five-stage pipelined RISC-V processor (**Fetch → Decode → Execute 
 - **UVM testbench for the hazard unit** – 1,170 transactions, 0 mismatches, **99.21 % functional coverage**
 - **Synthesized** for a Xilinx Zynq-7000 (xc7z010): **~80 MHz** post-synthesis estimate, **636 LUTs**, 0 DSP / 0 BRAM (see [Results](#results))
 - **Two pipeline bugs found and fixed** through system-level testing (see [Debugging highlights](#debugging-highlights))
+- **ASIC implementation in SkyWater 130 nm**: 40 MHz, **0 setup / hold / slew / cap violations at 9 PVT corners**, DRC / LVS / antenna clean, 0.211 mm², 10,017 cells (see [ASIC implementation](#asic-implementation-skywater-130-nm), [interactive layout viewer](https://ajeeth93.github.io/riscv32i-5stage-pipelined-cpu/layout/))
+
+## ASIC implementation: SkyWater 130 nm
+
+<a href="https://ajeeth93.github.io/riscv32i-5stage-pipelined-cpu/layout/">
+  <img src="docs/img/chip_innovus.png" width="520" alt="RV32I core layout in sky130 - click to open the interactive viewer">
+</a>
+
+**[Open the interactive layout viewer](https://ajeeth93.github.io/riscv32i-5stage-pipelined-cpu/layout/)**: zoom from the whole die down to single transistors, in a **Metal routing** view (met1 blue, met2 red, met3 green, met4 yellow, met5 purple) and an **All layers** view (diffusion, poly, contacts, li1, metals and vias).
+
+The core was hardened with memory ports (instruction and data memories outside the block) and taken to a signed-off GDSII with the open-source **LibreLane 3.0** flow on the **sky130A** PDK. Full report, including constraints, configuration, per-corner timing and the timing-closure story: **[asic/README.md](asic/README.md)**.
+
+```mermaid
+flowchart TD
+    RTL["RTL<br/>17 SystemVerilog files"] --> LINT["Lint<br/>Verilator: 4 harmless warnings"]
+    LINT --> SYN["Synthesis<br/>Yosys to sky130_fd_sc_hd"]
+    SYN --> FP["Floorplan + power grid<br/>40 % core utilization, met4/met5 straps"]
+    FP --> PL["Placement<br/>target density 45 %"]
+    PL --> CTS["Clock tree synthesis<br/>TritonCTS"]
+    CTS --> GRT["Global route<br/>+ post-route repair, 50 % slew/cap margins"]
+    GRT --> DRT["Detailed route<br/>TritonRoute"]
+    DRT --> RCX["Parasitic extraction<br/>OpenRCX"]
+    RCX --> STA["Sign-off STA, 9 PVT corners<br/>setup +3.13 ns (ss) · hold +0.093 ns (ff)<br/>0 setup / hold / slew / cap violations"]
+    RCX --> PV["Physical verification<br/>Magic + KLayout DRC · Netgen LVS · antenna<br/>all clean"]
+    STA --> GDS["Signed-off GDSII<br/>40 MHz · 0.211 mm² · 10,017 cells"]
+    PV --> GDS
+```
+
+| Metric | Result |
+|---|---|
+| Toolchain | LibreLane 3.0.17: Verilator, Yosys, OpenROAD (TritonCTS, TritonRoute), OpenRCX, OpenSTA, Magic, KLayout, Netgen |
+| PDK / cells | SkyWater sky130A / `sky130_fd_sc_hd` |
+| Clock | 25 ns (**40 MHz**), signed off at 9 corners (nom / min / max × tt / ss / ff) |
+| Worst setup slack | **+3.13 ns** at `max_ss_100C_1v60` |
+| Worst hold slack | **+0.093 ns** at `max_ff_n40C_1v95` |
+| Violations | **0** setup, hold, max slew and max cap at every corner |
+| Physical verification | Magic + KLayout DRC clean, Netgen LVS match, antenna pass |
+| Area | 211,001 µm² die (≈ 454 × 465 µm), 92,430 µm² cells, 47.35 % utilization, 10,017 cells |
+| Power | 8.95 mW (vectorless estimate) |
+| Functional check | Original self-checking testbench passes on the ASIC core (25 cycles, CPI 1.316) |
+
+**Constraints and configuration.** 40 MHz clock with 0.25 ns setup and 0.10 ns hold uncertainty; inputs driven by `sky130_fd_sc_hd__buf_4`, 30 fF output load; 4 ns input/output delay budgets, with a 2.5 ns minimum input delay to cover the ~2.1 ns clock-tree insertion delay. LibreLane runs with 40 % core utilization, 45 % placement density, post-global-route design and timing repair, and 50 % slew/cap repair margins. Files: [`asic/constraint.sdc`](asic/constraint.sdc), [`asic/config.json`](asic/config.json).
+
+**Timing closure in short.** The first full run at 20 ns failed setup by 1.29 ns at the slow corner, so the clock was relaxed to 25 ns. About 880 max-slew violations then remained at ss, on high-fanout register-file read-decode nets. Tightening `set_max_transition` and `set_max_fanout` made timing much worse (setup fell to −5 ns). The root cause was that the resizer repaired against optimistic estimated parasitics; adding post-global-route repair and 50 % slew/cap margins brought all violations to zero and raised setup slack from +1.59 to +3.13 ns. Run-by-run table: [asic/README.md](asic/README.md#timing-closure).
+
+**Signed-off GDSII:** [`asic/final/RISC_V_Pipeline_Top.gds.gz`](asic/final/)
 
 ## Architecture
 
@@ -95,6 +143,8 @@ Directed testbenches and waveforms for the PC, PC+4 adder, ALU, decoders, contro
 
 ## Results
 
+### FPGA
+
 **Synthesis** – Vivado 2023.2, Zynq-7000 `xc7z010clg400-1`, out-of-context, 100 MHz constraint:
 
 | Metric | Value |
@@ -107,6 +157,10 @@ Directed testbenches and waveforms for the PC, PC+4 adder, ALU, decoders, contro
 > Resource numbers include the test program held in on-chip instruction ROM. Because that program only uses registers x2–x9, Vivado trims unused register-file entries, so these figures are a lower bound for the full core. Program-independent core-only numbers are on the roadmap.
 
 **Critical path** (22 logic levels, 12.5 ns): `Rs2E` → forwarding mux → ALU subtraction (carry chain) → `Zero` → `PCSrcE` → next-PC mux → PC register. Branches are resolved in Execute using the ALU, so the branch decision and the PC update share one cycle. That is the main target for frequency improvement.
+
+### ASIC (sky130)
+
+40 MHz, 0 violations at 9 PVT corners, DRC / LVS clean, 0.211 mm², 8.95 mW. See [ASIC implementation](#asic-implementation-skywater-130-nm) and [asic/README.md](asic/README.md). The same branch path (forwarding → ALU → zero-detect → branch decision) is also the critical path in silicon.
 
 ## Debugging highlights
 
@@ -130,6 +184,13 @@ UVM Verification/             UVM environment for the hazard unit
 Constraints/clock.xdc         100 MHz clock constraint
 RTL Modules and Schematics/   block diagrams
 Simulation & Testing/         waveforms
+asic/                         ASIC implementation (sky130, LibreLane) - see asic/README.md
+  src/                          hardened core with memory ports
+  sim/                          riscv_soc wrapper, memories, testbench
+  config.json, constraint.sdc   signed-off flow configuration and constraints
+  final/                        signed-off GDSII
+  *.lyp, *.py, open_layout.sh   KLayout colours, layout rendering, deep-zoom tiles
+docs/                         GitHub Pages: interactive layout viewer (docs/layout/)
 ```
 
 ## Running it
@@ -156,6 +217,15 @@ cd "UVM Verification"
 ./run_xsim.sh          # 170 directed + 1000 random transactions
 ```
 
+### ASIC flow (LibreLane)
+
+```bash
+python3 -m librelane --dockerized asic/config.json   # from the repository root
+./asic/open_layout.sh                                # view the signed-off GDS in KLayout
+```
+
+Details: [asic/README.md](asic/README.md#reproducing-the-results)
+
 ### Synthesis
 
 1. Add `Constraints/clock.xdc` as a constraint.
@@ -168,7 +238,8 @@ cd "UVM Verification"
 - [ ] Dedicated branch comparator to shorten the critical path
 - [ ] Remaining RV32I instructions (`bne`, `blt`, `jalr`, `lui`, `auipc`, shifts, byte/half loads and stores)
 - [ ] Longer benchmarks (sorting, loops) and `riscv-tests` for compliance and steady-state CPI
-- [ ] ASIC implementation: RTL-to-GDSII with Cadence Genus, Innovus and Tempus
+- [x] ASIC implementation: RTL-to-GDSII in sky130 with LibreLane, signed off at 40 MHz ([asic/README.md](asic/README.md))
+- [ ] ASIC follow-ups: gate-level simulation with SDF, IR-drop and clock-tree analysis, workload-based power, branch comparator for ~50 MHz
 
 ## Acknowledgments
 
