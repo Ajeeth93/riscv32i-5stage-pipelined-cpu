@@ -1,8 +1,17 @@
 # ASIC Implementation: RV32I Core in SkyWater 130 nm
 
-<a href="https://ajeeth93.github.io/riscv32i-5stage-pipelined-cpu/layout/">
-  <img src="../docs/img/chip_innovus.png" width="520" alt="RV32I core layout in sky130 - click to open the interactive viewer">
-</a>
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://ajeeth93.github.io/riscv32i-5stage-pipelined-cpu/layout/"><img src="../docs/img/chip_innovus.png" width="400" alt="Metal routing view"></a><br>
+      <b>Metal routing</b><br><sub>met1 blue · met2 red · met3 green · met4 yellow · met5 purple</sub>
+    </td>
+    <td align="center">
+      <a href="https://ajeeth93.github.io/riscv32i-5stage-pipelined-cpu/layout/"><img src="../docs/img/chip_all_layers.png" width="400" alt="All layers view"></a><br>
+      <b>All layers</b><br><sub>diffusion, poly, contacts, li1, metals and vias</sub>
+    </td>
+  </tr>
+</table>
 
 **[Open the interactive layout viewer](https://ajeeth93.github.io/riscv32i-5stage-pipelined-cpu/layout/)**: zoom from the whole die down to single transistors, in a **Metal routing** view and an **All layers** view.
 
