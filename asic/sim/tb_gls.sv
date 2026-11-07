@@ -2,7 +2,10 @@
 // Gate-level testbench: checks the routed netlist only through its ports.
 // PASS = store of 25 to address 100 (same program as the RTL testbench).
 module tb_gls;
-    localparam real CLK_PERIOD = 25.0;   // 40 MHz, the signed-off frequency
+`ifndef CLK_NS
+  `define CLK_NS 25.0
+`endif
+    localparam real CLK_PERIOD = `CLK_NS;   // default 25 ns = 40 MHz (sign-off)
     localparam int  MAX_CYCLES = 200;
 
     logic        clk = 1'b0;
@@ -56,4 +59,10 @@ module tb_gls;
         $dumpfile("gls.vcd");
         $dumpvars(0, tb_gls);
     end
+`ifdef SDF_FILE
+    initial begin
+        $sdf_annotate(`SDF_FILE, dut.u_core);
+        $display("SDF annotated: %s, clock %0.1f ns", `SDF_FILE, CLK_PERIOD);
+    end
+`endif
 endmodule

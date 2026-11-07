@@ -18,3 +18,5 @@ xsim.dir/
 asic/runs/
 asic/sim/gls.vvp
 asic/sim/gls.vcd
+asic/sim/gls_sdf.vvp
+asic/sim/gls_*.log
