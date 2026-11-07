@@ -16,3 +16,5 @@ xsim.dir/
 *.gen/
 *.xpr
 asic/runs/
+asic/sim/gls.vvp
+asic/sim/gls.vcd

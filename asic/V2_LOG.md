@@ -20,3 +20,9 @@ Run: RUN_2026-10-30_22-42-44 · corner nom_tt_025C_1v80 · static analysis (Open
   so that section is fed from one side only: drop ∝ L²/2, versus L²/8 for a span fed from both ends.
 - Consequence for PPA: the PDN is over-designed, so a sparser grid can free routing tracks.
   Watch the right edge first if the grid is made sparser; rebalance the strap offset/pitch if needed.
+
+### 2a. Functional GLS (unit delay) — PASS
+- Netlist: final/nl/RISC_V_Pipeline_Top.nl.v + sky130_fd_sc_hd models (-DFUNCTIONAL -DUNIT_DELAY=#1), Icarus 12.
+- Testbench tb_gls.sv: ports only (the netlist is flattened, so dut.u_core.* no longer exists). Clock 25 ns = 40 MHz.
+- Result: STORE 96 ← 7, then STORE 100 ← 25 → PASS after 25 cycles. No X on PC or the store bus.
+- Prediction "might fail" → passed. Remaining risk is timing, which the SDF runs test.
