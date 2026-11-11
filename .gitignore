@@ -20,3 +20,9 @@ asic/sim/gls.vvp
 asic/sim/gls.vcd
 asic/sim/gls_sdf.vvp
 asic/sim/gls_*.log
+asic/sim/cvc/cells/
+asic/sim/cvc/netlist.v
+asic/sim/cvc/corner.sdf
+asic/sim/cvc/RISC-Vmem.txt
+asic/sim/cvc/sdf_annotate.log
+asic/sim/cvc/*.vcd

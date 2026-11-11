@@ -33,4 +33,38 @@ Run: RUN_2026-10-30_22-42-44 · corner nom_tt_025C_1v80 · static analysis (Open
   every flop would see floating inputs.
 - Conclusion: Icarus is valid for functional GLS only with these models.
 - Timing evidence for sky130: STA sign-off clean at 9 corners + functional GLS PASS.
-- Plan: SDF GLS (max_ss setup, min_ff hold) in Xcelium on the Cadence server.
+- Solved with CVC and a patched cell library (see 2c). Xcelium on Cadence later for full checks.
+
+
+### 2c. Timing GLS with SDF in CVC — PASS at 40 MHz
+- Simulator: open-source CVC (OSS_CVC 7.00b). Power-aware netlist (final/pnl), VPWR/VGND tied with supply1/supply0.
+- Problem: the sky130 timing models drive their flops through X_delayed copies that only $setuphold/$recrem
+  create; CVC (like Icarus) ignores that feature, so every flop saw undriven inputs and PC = X.
+- Fix: patch_delayed.py adds `assign X_delayed = X;` only for names inside $setuphold/$recrem
+  (a first version also hit internal signals such as SCE_gate_delayed and failed). Patched copy; PDK file untouched.
+- SDF: all IOPATH/INTERCONNECT delays annotated. 66 RECOVERY/REMOVAL entries on dfrtp_2 have no matching
+  check in the cell model (covered by STA).
+- Lesson: piping a running simulation into `head` kills it (SIGPIPE). Let it finish, then filter the log.
+
+| Corner | Clock | Result | Timing-check violations |
+|---|---|---|---|
+| none (models, no SDF) | 25 ns | PASS, 25 cycles | – |
+| max_ss_100C_1v60 | 25 ns | PASS, 25 cycles | 0 |
+| min_ff_n40C_1v95 | 25 ns | PASS, 25 cycles | 0 |
+| max_ss_100C_1v60 | 23 / 22 / 21 / 20 ns | PASS | 0 (at 20 ns) |
+| max_ss_100C_1v60 | 19 / 18 / 16 ns | FAIL (18 ns: PC → X; 16 ns: wrong result) | 11 / 9 / 0 |
+
+- Failure point (this program, slowest corner): between 20 and 19 ns ≈ 50–52 MHz. STA limit: 21.9 ns ≈ 45.7 MHz.
+  Simulation passes below the STA limit because this short test does not exercise every path; STA is the sign-off.
+- First setup violations at 18 ns: ID/EX flops PCPlus4E[5] (_10763_, 153 ps) and PCE[2] (_10728_, 184 ps),
+  plus reset flop _10692_ (net142, probably a PC bit; 18 ps).
+- All three are fed by the branch decision: PCSrcE selects the next PC and drives FlushE, which clears ID/EX.
+  Weak spot = branch resolution in Execute (forwarding → ALU compare → PCSrcE → PC mux / flush).
+- 16 ns failed with 0 violations: a silent wrong result. Tests must check results, not only warnings.
+
+### Prediction vs result (step 2)
+| Question | My prediction | Result |
+|---|---|---|
+| Will the netlist pass at 40 MHz? | Might fail | Passed: functional, ss and ff |
+| If it fails, what kind? | Hold | No failure at 40 MHz; when pushed, setup fails first (slow corner) |
+| Weakest spot when pushed? | Memory access | Branch resolution. Testbench memories have zero delay, so memory paths are faster in simulation than STA assumes |
