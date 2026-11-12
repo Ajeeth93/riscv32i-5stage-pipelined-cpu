@@ -62,9 +62,33 @@ Run: RUN_2026-10-30_22-42-44 · corner nom_tt_025C_1v80 · static analysis (Open
   Weak spot = branch resolution in Execute (forwarding → ALU compare → PCSrcE → PC mux / flush).
 - 16 ns failed with 0 violations: a silent wrong result. Tests must check results, not only warnings.
 
-### Prediction vs result (step 2)
-| Question | My prediction | Result |
+
+## 3. Branch-comparator optimisation
+
+### Before (STA, max_ss_100C_1v60, 25 ns)
+- Worst path: Rs2E → forwarding detection (4.3 ns) → forwarding + ALUSrc mux (1.8) → ALU subtract (4.4)
+  → 32-bit zero detect (6.6) → PCSrcE + fanout (2.0) → next-PC mux → PC register. Arrival 23.08 ns, slack +3.13 ns.
+- Agrees with CVC timing simulation (first violations at PC / ID/EX flops at 18 ns).
+
+### Change
+- New module RISC_V_Pipeline_BranchComparator: EqE = (SrcAE == WriteDataE) on the forwarded operands,
+  in parallel with the ALU. PCSrcE = (BranchE & EqE) | JumpE. ZeroE left unconnected → synthesis removes it.
+- Core supports only beq, so equality is the whole branch decision.
+- RTL simulation: PASS, 25 cycles, CPI 1.316, unchanged (the branch is still decided in Execute).
+
+### After (run RUN_2026-11-12_02-56-49, 25 ns, same settings)
+| Metric | Before | After |
 |---|---|---|
-| Will the netlist pass at 40 MHz? | Might fail | Passed: functional, ss and ff |
-| If it fails, what kind? | Hold | No failure at 40 MHz; when pushed, setup fails first (slow corner) |
-| Weakest spot when pushed? | Memory access | Branch resolution. Testbench memories have zero delay, so memory paths are faster in simulation than STA assumes |
+| Worst slack (any path), ss | +3.128 ns | +5.594 ns (half-cycle register-file write) |
+| Worst full-cycle slack, ss | +3.128 ns | +7.423 ns |
+| Branch path arrival | 23.08 ns | 18.74 ns |
+| Std cells | 10,017 | 9,910 |
+| Cell area | 195,195 µm² | 194,384 µm² (−0.4 %) |
+| DRC / LVS / antenna | clean | clean |
+
+- Estimated fmax at ss: full cycle 25 − 7.42 = 17.6 ns ≈ 57 MHz (was 21.9 ns ≈ 46 MHz, +24 %).
+  Half-cycle register-file path: 2 × (12.5 − 5.59) = 13.8 ns ≈ 72 MHz, not yet limiting.
+- New worst full-cycle path: forwarding detection (4.4 ns) → fwd mux + XOR → OR tree → PCSrcE → FlushE fanout
+  → ID/EX register. Next candidates: forwarding selects computed in Decode (option B), FlushE fanout.
+- LibreLane's max.rpt shows only 10 paths; all were half-cycle register-file paths. A custom OpenSTA script
+  (asic/sta_rise.tcl) split the report by capture edge to find the worst full-cycle path.
