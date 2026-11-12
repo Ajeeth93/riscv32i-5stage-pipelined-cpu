@@ -117,3 +117,40 @@ Run: RUN_2026-10-30_22-42-44 · corner nom_tt_025C_1v80 · static analysis (Open
   committed empty; recreated, with the run folder as a third argument. CVC (+interp) also reads keyboard
   input into its log, so the script now uses < /dev/null.
 - Lesson: an old log can look exactly like a new result. Delete stale logs and check timestamps.
+
+
+## 5. Performance/area sweep (short version)
+Script asic/sweep.sh: one config copy per experiment, named runs (--run-tag). Power only recorded
+(vectorless estimate); power optimisation (clock gating, real activity) moves to the CPU + cache project.
+
+| Run | Clock | Util setting | Setup WS | Setup vio | Hold WS | DRC/LVS | Die µm² | Final util | Power* |
+|---|---|---|---|---|---|---|---|---|---|
+| base | 18 ns | 40 % | +0.373 | 0 | +0.098 | 0/0 | 209,662 | 47.4 % | 12.88 mW |
+| clk17 | 17 ns | 40 % | −0.596 | 88 | +0.093 | 0/0 | 209,662 | 47.5 % | 13.64 mW |
+| u50 | 18 ns | 50 % | +0.499 | 0 | +0.098 | 0/0 | 169,143 | 58.4 % | 12.60 mW |
+| u60 | 18 ns | 60 % | +0.895 | 0 | +0.106 | 0/0 | 142,025 | 69.5 % | 12.42 mW |
+| **u70** | **18 ns** | **70 %** | **+0.650** | **0** | **+0.100** | **0/0** | **122,580** | **80.6 %** | **12.32 mW** |
+*vectorless estimate
+
+- 17 ns fails (88 violations, −0.596 ns): 17 + 0.596 ≈ 17.6 ns, as predicted. 18 ns (55.6 MHz) is the real limit.
+- Tighter packing improved setup slack up to 60 % (shorter wires = less capacitance), then congestion
+  cost a little at 70 %. Still clean.
+- Final utilisation exceeds the setting (+7 to +11 points): buffers, hold cells and the clock tree are added
+  after the floorplan is sized.
+- Std-cell area (design__instance__area__stdcell, excludes fill/decap):
+  v1 92,430 µm² (10,017 cells) → comparator 92,229 µm² (9,909, −0.2 %) → u70 89,187 µm² (8,555, −3.5 %).
+  Correction: the earlier "−0.4 %" used design__instance__area, which includes filler cells (= core area).
+- Chosen final layout: u70 (18 ns, 70 %). Verified: functional GLS PASS; CVC SDF GLS at 18 ns PASS at
+  max_ss and min_ff, 0 timing violations.
+- Incident: `< /dev/null` on the CVC line broke the Docker wrapper (needs a TTY), giving 79-byte logs.
+  Removed again; don't type while CVC runs instead.
+
+## Summary v2 vs v1
+| | v1 | v2 (final) |
+|---|---|---|
+| Signed-off clock | 40 MHz (25 ns) | **55.6 MHz (18 ns)**; design limit 45.7 → 55.6 MHz (+22 %) |
+| Die area | 209,662 µm² | **122,580 µm² (−41.5 %)** |
+| Std cells / area | 10,017 / 92,430 µm² | 8,555 / 89,187 µm² (−3.5 %) |
+| Final utilisation | 47 % | 80.6 % |
+| Power (est., same method) | – | 12.32 mW at 55.6 MHz |
+| Sign-off | 9 corners, DRC/LVS clean | 9 corners, DRC/LVS clean + GLS (functional and SDF) |

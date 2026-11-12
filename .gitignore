@@ -27,3 +27,5 @@ asic/sim/cvc/RISC-Vmem.txt
 asic/sim/cvc/sdf_annotate.log
 asic/sim/cvc/*.vcd
 asic/sim/rtl.vvp
+asic/config_*.json
+asic/sweep_*.log

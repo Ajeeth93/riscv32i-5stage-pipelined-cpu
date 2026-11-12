@@ -27,5 +27,5 @@ fi
 echo "Run: $RUN_NAME   Corner: $CORNER   Clock: $PERIOD ns"
 # patched cell library: *_delayed signals driven directly (see patch_delayed.py)
 "$HOME/cvc" +interp $DELAYS +change_port_type $DEFS \
-    cells/primitives.v cells/sky130_fd_sc_hd_patched.v netlist.v tb_gls_cvc.v < /dev/null \
+    cells/primitives.v cells/sky130_fd_sc_hd_patched.v netlist.v tb_gls_cvc.v \
     2>&1 | tee "cvc_${CORNER}_${PERIOD}ns.log"
