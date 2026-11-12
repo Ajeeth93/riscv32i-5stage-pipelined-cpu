@@ -1,7 +1,8 @@
 # RV32I core - sky130 - 40 MHz
 
 # 1. Clock
-create_clock -name clk -period 25.0 -waveform {0.0 12.5} [get_ports clk]
+set clk_period $::env(CLOCK_PERIOD)
+create_clock -name clk -period $clk_period -waveform [list 0.0 [expr {$clk_period / 2.0}]] [get_ports clk]
 set_clock_latency -source -early 0.10 [get_clocks clk]
 set_clock_latency -source -late  0.20 [get_clocks clk]
 set_clock_uncertainty -setup 0.25 [get_clocks clk]

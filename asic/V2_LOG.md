@@ -92,3 +92,28 @@ Run: RUN_2026-10-30_22-42-44 · corner nom_tt_025C_1v80 · static analysis (Open
   → ID/EX register. Next candidates: forwarding selects computed in Decode (option B), FlushE fanout.
 - LibreLane's max.rpt shows only 10 paths; all were half-cycle register-file paths. A custom OpenSTA script
   (asic/sta_rise.tcl) split the report by capture edge to find the worst full-cycle path.
+
+
+### 18 ns run (RUN_2026-11-12_03-26-50) — signed off at 55.6 MHz
+- SDC now reads the period from the config (set clk_period $::env(CLOCK_PERIOD)); CLOCK_PERIOD = 18.
+- I/O delays kept at 4.0 ns (external memory budget does not scale with the core clock): 22 % of the cycle at 18 ns.
+- Runtime 17 min 38 s (25 ns run: 19 min 29 s).
+
+| Check | Result |
+|---|---|
+| Setup violations / worst slack | 0 / +0.373 ns (max_ss_100C_1v60) |
+| Hold violations / worst slack | 0 / +0.098 ns (max_ff_n40C_1v95) |
+| Route DRC (iterations 131 → 18 → 7 → 0) / Magic / KLayout | 0 / 0 / 0 |
+| LVS | 0 |
+| Area / std cells | 194,384 µm² / 9,909 (same as the 25 ns run) |
+
+- Estimate from the 25 ns run (17.6 ns) confirmed: 18 − 0.373 = 17.6 ns.
+- Result: 40 MHz → 55.6 MHz signed off (+39 %) at −0.4 % area vs. the original sign-off. No extra area needed
+  for the tighter clock.
+- Functional GLS of the new netlist: PASS, 25 cycles.
+- CVC SDF GLS at 18 ns: max_ss PASS, min_ff PASS, 0 timing violations
+  (the old netlist failed at 18 ns with 9 violations).
+- Incidents: run_cvc.sh had been emptied by pasting terminal output (a "> ./run_cvc.sh" redirect) and was
+  committed empty; recreated, with the run folder as a third argument. CVC (+interp) also reads keyboard
+  input into its log, so the script now uses < /dev/null.
+- Lesson: an old log can look exactly like a new result. Delete stale logs and check timestamps.
