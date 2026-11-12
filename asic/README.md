@@ -15,7 +15,54 @@
 
 **[Open the interactive layout viewer](https://ajeeth93.github.io/riscv32i-5stage-pipelined-cpu/layout/)**: zoom from the whole die down to single transistors, in a **Metal routing** view and an **All layers** view.
 
-The 5-stage RV32I core was taken from RTL to a signed-off GDSII with the open-source **LibreLane** flow (Yosys + OpenROAD + Magic/KLayout/Netgen) on the **SkyWater sky130A** PDK. It closes timing at **40 MHz with zero setup, hold, slew and capacitance violations at all 9 PVT corners**, and passes DRC, LVS and antenna checks.
+The 5-stage RV32I core was taken from RTL to a signed-off GDSII with the open-source **LibreLane** flow (Yosys + OpenROAD + Magic/KLayout/Netgen) on the **SkyWater sky130A** PDK. It closes timing at **55.6 MHz (v2; v1 was 40 MHz) with zero setup, hold, slew and capacitance violations at all 9 PVT corners**, and passes DRC, LVS and antenna checks.
+
+## v2 update (November 2026)
+
+| | v1 | v2 |
+|---|---|---|
+| Clock | 25 ns (40 MHz) | **18 ns (55.6 MHz)** |
+| Design limit at the slow corner | ≈ 21.9 ns (45.7 MHz) | ≈ 17.6 ns (56.8 MHz); a 17 ns run fails setup by 0.60 ns |
+| Worst setup / hold slack | +3.13 / +0.093 ns | **+0.650 / +0.100 ns** |
+| Die area | 211,001 µm² | **122,580 µm² (≈ 345 × 356 µm, −42 %)** |
+| Standard cells | 10,017 cells, 92,430 µm² | 8,555 cells, 89,187 µm² |
+| Final utilization | 47.35 % | 80.6 % |
+| Power (vectorless) | 8.95 mW at 40 MHz | 12.32 mW at 55.6 MHz |
+| Gate-level simulation | – | functional PASS; SDF timing (CVC) PASS at ss and ff, 0 timing violations |
+
+**What changed**
+1. **Dedicated branch comparator.** STA and SDF gate-level simulation both pointed at the same critical path:
+   forwarding detection → ALU subtract → 32-bit zero detect → `PCSrcE` → PC / flush. The core only supports `beq`,
+   so a comparator on the forwarded operands (`EqE = SrcAE == WriteDataE`) replaces the ALU in the branch decision.
+   Branch-path arrival fell from 23.1 to 18.7 ns; the zero-detect logic was removed by synthesis.
+2. **Utilization sweep.** 40 → 50 → 60 → 70 % at 18 ns, all clean. Shorter wires improved setup slack and power;
+   70 % (80.6 % final) gives the smallest die. A 17 ns run failed, confirming the 17.6 ns estimate.
+3. **SDC follows the config.** `create_clock` reads `CLOCK_PERIOD`, so one number sets the target.
+
+**Verification added in v2**
+- Functional gate-level simulation of the routed netlist (Icarus, unit delays): PASS.
+- SDF-annotated timing simulation (CVC) at the slowest and fastest corners: PASS, 0 timing-check violations.
+  The sky130 timing models needed a small patch (`asic/sim/cvc/patch_delayed.py`) because Icarus and CVC
+  do not drive their `*_delayed` signals.
+- Static IR drop: 1.4 mV worst combined (0.08 % of 1.8 V); the power grid is over-designed. Heat map:
+  [`docs/img/irdrop_met1_vpwr.png`](../docs/img/irdrop_met1_vpwr.png).
+
+**v2 sign-off per corner** (18 ns, extracted parasitics)
+
+| Corner | Setup WS (ns) | Hold WS (ns) |
+|---|---|---|
+| `nom_tt_025C_1v80` | +5.442 | +0.223 |
+| `min_tt_025C_1v80` | +5.546 | +0.224 |
+| `max_tt_025C_1v80` | +5.345 | +0.222 |
+| `nom_ss_100C_1v60` | +0.980 | +0.556 |
+| `min_ss_100C_1v60` | +1.299 | +0.558 |
+| `max_ss_100C_1v60` | +0.650 | +0.554 |
+| `nom_ff_n40C_1v95` | +6.688 | +0.101 |
+| `min_ff_n40C_1v95` | +6.751 | +0.101 |
+| `max_ff_n40C_1v95` | +6.630 | +0.100 |
+
+Full record, including predictions versus results: [`asic/V2_LOG.md`](V2_LOG.md).
+
 
 ## Contents
 
@@ -38,19 +85,19 @@ The 5-stage RV32I core was taken from RTL to a signed-off GDSII with the open-so
 | Metric | Result |
 |---|---|
 | Technology | SkyWater sky130A, standard cells `sky130_fd_sc_hd` |
-| Clock | **25 ns (40 MHz)** |
+| Clock | **18 ns (55.6 MHz)** (v1: 25 ns, 40 MHz) |
 | Sign-off corners | 9: nom / min / max parasitics × tt / ss / ff |
-| Worst setup slack | **+3.13 ns** (`max_ss_100C_1v60`) |
-| Worst hold slack | **+0.093 ns** (`max_ff_n40C_1v95`) |
+| Worst setup slack | **+0.650 ns** (`max_ss_100C_1v60`) |
+| Worst hold slack | **+0.100 ns** (`max_ff_n40C_1v95`) |
 | Setup / hold / max-slew / max-cap violations | **0 / 0 / 0 / 0** at every corner |
 | DRC (Magic + KLayout) | Clean |
 | LVS (Netgen) | Match |
 | Antenna | Pass |
-| Die area | 211,001 µm² (≈ 454 × 465 µm, 0.211 mm²) |
-| Standard-cell area | 92,430 µm² |
-| Utilization | 47.35 % |
-| Cells | 10,017 (logic, clock tree and buffers, excluding fill) |
-| Power | 8.95 mW (vectorless, default switching activity) |
+| Die area | 122,580 µm² (≈ 345 × 356 µm, 0.123 mm²; v1 0.211 mm², −42 %) |
+| Standard-cell area | 89,187 µm² (v1 92,430 µm²) |
+| Utilization | 80.6 % (v1 47.35 %) |
+| Cells | 8,555 (logic, clock tree and buffers, excluding fill; v1 10,017) |
+| Power | 12.32 mW at 55.6 MHz (vectorless, default switching activity; v1 8.95 mW at 40 MHz) |
 | Functional check | Testbench passes on the ASIC core: 25 stored to address 100, 25 cycles, CPI 1.316 |
 
 ## What was hardened
@@ -99,15 +146,15 @@ The hardened block is the **core alone**. Instruction and data memories sit outs
 flowchart TD
     RTL["RTL<br/>17 SystemVerilog files"] --> LINT["Lint<br/>Verilator: 4 harmless warnings"]
     LINT --> SYN["Synthesis<br/>Yosys to sky130_fd_sc_hd"]
-    SYN --> FP["Floorplan + power grid<br/>40 % core utilization, met4/met5 straps"]
+    SYN --> FP["Floorplan + power grid<br/>70 % core utilization, met4/met5 straps"]
     FP --> PL["Placement<br/>target density 45 %"]
     PL --> CTS["Clock tree synthesis<br/>TritonCTS"]
     CTS --> GRT["Global route<br/>+ post-route repair, 50 % slew/cap margins"]
     GRT --> DRT["Detailed route<br/>TritonRoute"]
     DRT --> RCX["Parasitic extraction<br/>OpenRCX"]
-    RCX --> STA["Sign-off STA, 9 PVT corners<br/>setup +3.13 ns (ss) · hold +0.093 ns (ff)<br/>0 setup / hold / slew / cap violations"]
+    RCX --> STA["Sign-off STA, 9 PVT corners<br/>setup +0.650 ns (ss) · hold +0.100 ns (ff)<br/>0 setup / hold / slew / cap violations"]
     RCX --> PV["Physical verification<br/>Magic + KLayout DRC · Netgen LVS · antenna<br/>all clean"]
-    STA --> GDS["Signed-off GDSII<br/>40 MHz · 0.211 mm² · 10,017 cells"]
+    STA --> GDS["Signed-off GDSII<br/>55.6 MHz · 0.123 mm² · 8,555 cells"]
     PV --> GDS
 ```
 
@@ -118,10 +165,11 @@ The 4 lint warnings are all expected: `dmem_ready` is not used yet, and `lwstall
 [`constraint.sdc`](constraint.sdc), used for both place-and-route and sign-off:
 
 ```tcl
-# RV32I core - sky130 - 40 MHz
+# RV32I core - sky130 - 55.6 MHz (18 ns)
 
 # 1. Clock
-create_clock -name clk -period 25.0 -waveform {0.0 12.5} [get_ports clk]
+set clk_period $::env(CLOCK_PERIOD)
+create_clock -name clk -period $clk_period -waveform [list 0.0 [expr {$clk_period / 2.0}]] [get_ports clk]
 set_clock_latency -source -early 0.10 [get_clocks clk]
 set_clock_latency -source -late  0.20 [get_clocks clk]
 set_clock_uncertainty -setup 0.25 [get_clocks clk]
@@ -147,7 +195,7 @@ set_false_path -from [get_ports dmem_ready]
 Why these values:
 
 - **Minimum input delay 2.5 ns.** The clock tree delays the flip-flop clocks by about 2.1 ns. With a 1.5 ns minimum input delay, input data reached 22 flops before their own clock edge and violated hold.
-- **I/O budget of 4 ns out of 25 ns** on each side leaves the external memories 16 % of the cycle.
+- **I/O budget of 4 ns out of 18 ns** on each side leaves the external memories 22 % of the cycle (kept fixed from v1: the external memory does not get faster when the core does).
 - **False paths:** `rst` is treated as quasi-static, and `dmem_ready` is not connected to logic yet.
 - **No `set_max_fanout` or `set_max_transition`.** Both were tried and both made timing much worse (see [Timing closure](#timing-closure)).
 
@@ -160,11 +208,11 @@ Why these values:
   "DESIGN_NAME": "RISC_V_Pipeline_Top",
   "VERILOG_FILES": "dir::src/*.sv",
   "CLOCK_PORT": "clk",
-  "CLOCK_PERIOD": 25,
+  "CLOCK_PERIOD": 18,
   "PNR_SDC_FILE": "dir::constraint.sdc",
   "SIGNOFF_SDC_FILE": "dir::constraint.sdc",
-  "FP_CORE_UTIL": 40,
-  "PL_TARGET_DENSITY_PCT": 45,
+  "FP_CORE_UTIL": 70,
+  "PL_TARGET_DENSITY_PCT": 75,
   "RUN_POST_GRT_DESIGN_REPAIR": true,
   "RUN_POST_GRT_RESIZER_TIMING": true,
   "GRT_DESIGN_REPAIR_MAX_SLEW_PCT": 50,
@@ -177,7 +225,7 @@ Why these values:
 | Setting | Why |
 |---|---|
 | `CLOCK_PERIOD` 25 | 20 ns failed setup at the slow corner by 1.29 ns |
-| `FP_CORE_UTIL` 40, `PL_TARGET_DENSITY_PCT` 45 | Leaves room for buffering and routing; final utilization 47 % |
+| `FP_CORE_UTIL` 70, `PL_TARGET_DENSITY_PCT` 75 | Chosen by a utilization sweep (40–70 %): smallest die that still closes cleanly; final utilization 80.6 % |
 | `RUN_POST_GRT_DESIGN_REPAIR`, `RUN_POST_GRT_RESIZER_TIMING` | Repair slew, cap and timing again once real global routes exist |
 | `*_MAX_SLEW_PCT` / `*_MAX_CAP_PCT` 50 | Margin against parasitics that the pre-route estimate underestimates (default 10 %) |
 
@@ -185,7 +233,7 @@ Floorplan, power grid (met4 vertical and met5 horizontal straps) and clock tree 
 
 ## Sign-off: timing at 9 corners
 
-Post-route STA with extracted parasitics (`openroad-stapostpnr/summary.rpt`):
+Post-route STA with extracted parasitics (`openroad-stapostpnr/summary.rpt`). *This table is the v1 sign-off (25 ns); the v2 per-corner table is in [v2 update](#v2-update-november-2026).*
 
 | Corner | Setup WNS (ns) | Hold WNS (ns) | Setup / hold violations | Max slew / cap violations |
 |---|---|---|---|---|
@@ -203,17 +251,17 @@ The slow-slow corners set the frequency; fast-fast sets the hold margin. Total n
 
 **Critical setup path:** writeback result → forwarding mux → ALU → 32-bit zero-detect OR tree → branch decision (`PCSrcE`) → next PC. Branches are resolved in Execute from the ALU result, so the branch decision and the PC update share one cycle.
 
-**Frequency headroom (estimate from final slack):** about 45 MHz at ss and about 60 MHz at tt.
+**Frequency headroom:** v1 ≈ 45 MHz at ss. v2 is signed off at 55.6 MHz; a 17 ns run fails setup by 0.60 ns, so the v2 limit is ≈ 17.6 ns at ss.
 
 ## Sign-off: area, power and physical checks
 
 | Check | Result |
 |---|---|
-| Die area | 211,001 µm² |
-| Standard-cell area | 92,430 µm² |
-| Utilization | 47.35 % |
-| Cell count | 10,017 |
-| Total power | 8.95 mW (vectorless estimate, default activity) |
+| Die area | 122,580 µm² (v1 211,001 µm²) |
+| Standard-cell area | 89,187 µm² (v1 92,430 µm²) |
+| Utilization | 80.6 % (v1 47.35 %) |
+| Cell count | 8,555 (v1 10,017) |
+| Total power | 12.32 mW at 55.6 MHz (vectorless estimate, default activity) |
 | Magic DRC | 0 violations |
 | KLayout DRC | 0 violations |
 | Netgen LVS | Netlists match |
@@ -321,20 +369,22 @@ docs/
 
 Honest scope of this first sign-off:
 
-- **40 MHz is modest** for RV32I in sky130; the design is not yet optimized.
+- **55.6 MHz is still modest** for RV32I in sky130; the next limits are forwarding detection and the `FlushE` fanout (see [V2_LOG.md](V2_LOG.md)).
 - **No gate-level simulation with SDF yet**, so correctness with real delays is not demonstrated.
 - **Power is a vectorless estimate**, not a workload-based number.
-- **Floorplan, power grid and clock tree use tool defaults**; the IR-drop report has not been analysed.
+- **Power grid and clock tree use tool defaults.** Static IR drop was analysed in v2: 1.4 mV worst (0.08 % of 1.8 V), so the grid is over-designed.
 - **Memories are outside the core.**
 - **Signal-integrity (crosstalk) analysis** is not available in OpenSTA.
 
 Planned work:
 
-- [ ] IR-drop analysis and a justified power-grid design (strap pitch and width versus worst drop)
+- [x] IR-drop analysis (v2: static, 1.4 mV worst)
+- [ ] Justified power-grid design (strap pitch and width versus worst drop)
 - [ ] Clock-tree analysis: skew, insertion latency, buffer count
 - [ ] RC-correlation study: slack and slew at placement estimate, global route and extracted SPEF
-- [ ] Hand floorplan with pins grouped by function; utilization sweep
+- [x] Utilization sweep (v2: 40–70 %, final 70 %)
+- [ ] Hand floorplan with pins grouped by function
 - [ ] Gate-level simulation with SDF at ss and ff
 - [ ] Workload-based power from a VCD
-- [ ] Dedicated branch comparator off the ALU path; target about 50 MHz at ss
+- [x] Dedicated branch comparator off the ALU path (v2: 55.6 MHz signed off)
 - [ ] Integration with the [direct-mapped write-back cache](https://github.com/Ajeeth93/direct-mapped-writeback-cache) and SRAM macros

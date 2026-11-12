@@ -1,4 +1,4 @@
-# RV32I core - sky130 - 40 MHz
+# RV32I core - sky130 - clock period from CONFIG CLOCK_PERIOD (v2: 18 ns, 55.6 MHz)
 
 # 1. Clock
 set clk_period $::env(CLOCK_PERIOD)
