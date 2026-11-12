@@ -37,7 +37,7 @@ module RISC_V_Pipeline_Top (
     logic [31:0] RD1E, RD2E, ImmExtE, PCE, PCPlus4E;
     logic [31:0] SrcAE, SrcBE, WriteDataE, ALUResultE, PCTargetE;
     logic [4:0]  Rs1E, Rs2E, RdE;
-    logic        RegWriteE, MemWriteE, JumpE, BranchE, ALUSrcE, ZeroE, PCSrcE;
+    logic        RegWriteE, MemWriteE, JumpE, BranchE, ALUSrcE, ZeroE, PCSrcE, EqE;
     logic [1:0]  ResultSrcE;
     logic [2:0]  ALUControlE;
 
@@ -193,7 +193,14 @@ module RISC_V_Pipeline_Top (
         .SrcBE       (SrcBE),
         .ALUControlE (ALUControlE),
         .ALUResultE  (ALUResultE),
-        .Zero        (ZeroE)
+        .Zero        (ZeroE)          // now unused: synthesis removes the zero detect
+    );
+
+    // v2: dedicated branch comparator, in parallel with the ALU
+    RISC_V_Pipeline_BranchComparator u_brcmp (
+        .SrcAE      (SrcAE),
+        .WriteDataE (WriteDataE),
+        .EqE        (EqE)
     );
 
     RISC_V_Pipeline_PCEImmExtEAdder u_pctarget (
@@ -202,7 +209,8 @@ module RISC_V_Pipeline_Top (
         .PCTargetE (PCTargetE)
     );
 
-    assign PCSrcE = (BranchE & ZeroE) | JumpE;
+    // v2: was (BranchE & ZeroE) | JumpE; the branch no longer waits for the ALU
+    assign PCSrcE = (BranchE & EqE) | JumpE;
 
     RISC_V_Pipeline_ExecuteMemoryPipeline u_em (
         .clk        (clk),
